@@ -2,7 +2,6 @@
 
 from models import Spot, Ticket, Visit
 
-
 class Storage:
     """Store parking spots, tickets, and visit history in memory."""
 
@@ -31,3 +30,4 @@ class Storage:
     def get_history(self) -> list[Visit]:
         """Return all completed parking visits."""
         return self.history
+        
