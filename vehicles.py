@@ -34,4 +34,3 @@ def get_spots_required(vehicle_type: VehicleType) -> int:
     """Return the number of parking spots required."""
     validate_vehicle_type(vehicle_type)
     return VEHICLE_TYPES[vehicle_type]["spots_required"]
-    

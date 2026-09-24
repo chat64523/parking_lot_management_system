@@ -30,4 +30,3 @@ class Storage:
     def get_history(self) -> list[Visit]:
         """Return all completed parking visits."""
         return self.history
-        

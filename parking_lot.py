@@ -7,7 +7,7 @@ from datetime import datetime
 from models import Spot, Ticket, Vehicle, Visit, VehicleType
 from pricing import create_pricing
 from storage import Storage
-from vehicles import get_spots_required, get_vehicle_prefix, validate_vehicle_type
+from vehicles import get_spots_required, get_vehicle_prefix,validate_vehicle_type
 
 class ParkingLot:
     """Manage parking spots, tickets, vehicle entry, and exits."""
@@ -36,6 +36,20 @@ class ParkingLot:
         """Return parking visit history."""
         return self.storage.history
 
+    def _create_spots(self, vehicle_type, spot_count):
+        """Create parking spots for a vehicle type."""
+        validate_vehicle_type(vehicle_type)
+        prefix = get_vehicle_prefix(vehicle_type)
+
+        for number in range(1, spot_count + 1):
+            spot_id = f"{prefix}-{number:02d}"
+            self.storage.save_spot(
+                Spot(
+                    spot_id=spot_id,
+                    vehicle_type=vehicle_type,
+                )
+            )
+
     def initialize(self, spot_config: dict, pricing_type=None):
         """Initialize parking spots and select the pricing strategy."""
         if not spot_config:
@@ -56,17 +70,7 @@ class ParkingLot:
             self.ticket_counter = 0
 
             for vehicle_type, spot_count in spot_config.items():
-                validate_vehicle_type(vehicle_type)
-                prefix = get_vehicle_prefix(vehicle_type)
-
-                for number in range(1, spot_count + 1):
-                    spot_id = f"{prefix}-{number:02d}"
-                    self.storage.save_spot(
-                        Spot(
-                            spot_id=spot_id,
-                            vehicle_type=vehicle_type,
-                        )
-                    )
+                self._create_spots(vehicle_type, spot_count)
 
             self.pricing = pricing
             self.initialized = True
@@ -175,6 +179,7 @@ class ParkingLot:
                 raise ValueError(
                     "Invalid or already-closed ticket ID"
                 )
+
             exit_time = datetime.now()
             duration = max(
                 0,
@@ -184,6 +189,7 @@ class ParkingLot:
                     ).total_seconds() // 60
                 ),
             )
+
             fee = self.pricing.calculate(
                 ticket.vehicle_type,
                 duration,
@@ -197,17 +203,6 @@ class ParkingLot:
 
             self.storage.save_ticket(completed_ticket)
 
-            for spot_id in ticket.spot_ids:
-                try:
-                    spot = self.spots[spot_id]
-                except KeyError as exc:
-                    raise ValueError(
-                        f"Spot not found: {spot_id}"
-                    ) from exc
-
-                spot.occupied = False
-                spot.ticket_id = None
-
             visit = Visit(
                 ticket_id=completed_ticket.ticket_id,
                 plate=completed_ticket.plate,
@@ -220,6 +215,17 @@ class ParkingLot:
             )
 
             self.storage.add_visit(visit)
+
+            for spot_id in ticket.spot_ids:
+                try:
+                    spot = self.spots[spot_id]
+                except KeyError as exc:
+                    raise ValueError(
+                        f"Spot not found: {spot_id}"
+                    ) from exc
+
+                spot.occupied = False
+                spot.ticket_id = None
 
             return visit
 
@@ -322,7 +328,9 @@ class ParkingLot:
 
         successful = sum(results)
         rejected = concurrent - successful
-        spot_conflicts = (len(assigned_spots)- len(set(assigned_spots)))
+        spot_conflicts = (
+            len(assigned_spots) - len(set(assigned_spots))
+        )
 
         return {
             "status": "ok",
@@ -330,4 +338,3 @@ class ParkingLot:
             "rejected": rejected,
             "spot_conflicts": spot_conflicts,
         }
-
