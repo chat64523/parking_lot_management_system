@@ -7,7 +7,8 @@ from datetime import datetime
 from models import Spot, Ticket, Vehicle, Visit, VehicleType
 from pricing import create_pricing
 from storage import Storage
-from vehicles import get_spots_required, get_vehicle_prefix,validate_vehicle_type
+from vehicles import get_spots_required, get_vehicle_prefix
+from utils import validate_vehicle_type
 
 class ParkingLot:
     """Manage parking spots, tickets, vehicle entry, and exits."""
@@ -38,7 +39,7 @@ class ParkingLot:
 
     def _create_spots(self, vehicle_type, spot_count):
         """Create parking spots for a vehicle type."""
-        validate_vehicle_type(vehicle_type)
+        validate_vehicle_type(vehicle_type, VehicleType)
         prefix = get_vehicle_prefix(vehicle_type)
 
         for number in range(1, spot_count + 1):
@@ -136,7 +137,7 @@ class ParkingLot:
     def park(self, vehicle):
         """Park a vehicle and create a parking ticket."""
         self._require_initialized()
-        validate_vehicle_type(vehicle.vehicle_type)
+        validate_vehicle_type(vehicle.vehicle_type, VehicleType)
 
         with self.lock:
             selected_spots = self._find_available_spots(
@@ -288,7 +289,7 @@ class ParkingLot:
     ):
         """Test concurrent vehicle entry into the parking lot."""
         self._require_initialized()
-        validate_vehicle_type(vehicle_type)
+        validate_vehicle_type(vehicle_type, VehicleType)
 
         results = []
         assigned_spots = []
