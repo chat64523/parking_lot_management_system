@@ -3,7 +3,10 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from utils import validate_vehicle_type, validate_exit_time
+from parking_system.utils import (
+    validate_exit_time,
+    validate_vehicle_type,
+)
 
 
 class VehicleType(str, Enum):
@@ -13,6 +16,7 @@ class VehicleType(str, Enum):
     CAR = "car"
     BUS = "bus"
 
+
 @dataclass
 class Vehicle:
     """Represent a vehicle entering the parking lot."""
@@ -20,7 +24,7 @@ class Vehicle:
     plate: str
     vehicle_type: VehicleType
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate the vehicle type."""
         validate_vehicle_type(self.vehicle_type, VehicleType)
 
@@ -34,14 +38,17 @@ class Spot:
     occupied: bool = False
     ticket_id: str | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate the parking spot."""
         validate_vehicle_type(self.vehicle_type, VehicleType)
 
-        if self.occupied and self.ticket_id is None:
-            raise ValueError(
-                "An occupied spot must have a ticket_id"
-            )
+        try:
+            if self.occupied and self.ticket_id is None:
+                raise ValueError(
+                   "An occupied spot must have a ticket_id"
+                )
+        except ValueError as exc:
+            raise exc
 
 
 @dataclass(frozen=True)
@@ -51,12 +58,12 @@ class Ticket:
     ticket_id: str
     plate: str
     vehicle_type: VehicleType
-    spot_ids: list[str]
+    spot_ids: tuple[str, ...]
     entry_time: datetime
     exit_time: datetime | None = None
     fee: float | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate the parking ticket."""
         validate_vehicle_type(self.vehicle_type, VehicleType)
         validate_exit_time(self.entry_time, self.exit_time)
@@ -73,16 +80,27 @@ class Visit(Ticket):
 
     duration_minutes: int = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate the completed parking visit."""
         super().__post_init__()
 
-        if self.exit_time is None:
-            raise ValueError(
-                "A completed visit must have an exit_time"
-            )
+        errors = []
 
-        if self.duration_minutes < 0:
-            raise ValueError(
-                "duration_minutes cannot be negative"
-            )
+        try:
+            if self.exit_time is None:
+                raise ValueError(
+                    "A completed visit must have an exit_time"
+                )
+        except ValueError as exc:
+            errors.append(str(exc))
+
+        try:
+            if self.duration_minutes < 0:
+                raise ValueError(
+                    "duration_minutes cannot be negative"
+                )
+        except ValueError as exc:
+            errors.append(str(exc))
+
+        if errors:
+            raise ValueError("; ".join(errors))

@@ -1,7 +1,8 @@
 """Vehicle types and validation for the parking lot system."""
 
-from models import VehicleType
-from utils import validate_vehicle_type
+from parking_system.models import VehicleType
+from parking_system.utils import validate_vehicle_type
+
 
 VEHICLE_TYPES = {
     VehicleType.MOTORCYCLE: {
@@ -18,10 +19,12 @@ VEHICLE_TYPES = {
     },
 }
 
+
 def get_vehicle_prefix(vehicle_type: VehicleType) -> str:
     """Return the prefix assigned to a vehicle type."""
     validate_vehicle_type(vehicle_type, VehicleType)
     return VEHICLE_TYPES[vehicle_type]["prefix"]
+
 
 def get_spots_required(vehicle_type: VehicleType) -> int:
     """Return the number of parking spots required."""

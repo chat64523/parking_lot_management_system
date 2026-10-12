@@ -1,6 +1,7 @@
 """In-memory storage for the parking lot management system."""
 
-from models import Spot, Ticket, Visit
+from parking_system.models import Spot, Ticket, Visit
+
 
 class Storage:
     """Store parking spots, tickets, and visit history in memory."""

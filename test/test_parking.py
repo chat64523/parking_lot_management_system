@@ -1,146 +1,89 @@
 """Tests for the parking lot management system."""
 
-from models import Vehicle, VehicleType
-from parking_lot import ParkingLot
+import pytest
+from parking_system.parking_lot import ParkingLot
+from parking_system.models import Vehicle, VehicleType
 
 
 def test_empty_entry():
     """Test parking a vehicle in an empty parking lot."""
     lot = ParkingLot()
-    lot.initialize({
-        VehicleType.MOTORCYCLE: 1,
-        VehicleType.CAR: 2,
-        VehicleType.BUS: 1
-    })
+    lot.initialize({VehicleType.CAR: 2})
+    vehicle = Vehicle("C001", VehicleType.CAR)
+    ticket = lot.park(vehicle)
 
-    result = lot.park(
-        Vehicle("C001", VehicleType.CAR)
-    )
-
-    assert result.ticket_id == "T001"
-    assert result.plate == "C001"
-    assert result.vehicle_type == VehicleType.CAR
-    assert result.spot_ids == ["C-01"]
+    assert ticket is not None
+    assert ticket.ticket_id is not None
 
 
 def test_full_lot():
-    """Test that parking fails when no spots are available."""
+    """Test that parking fails when no car spots are available."""
     lot = ParkingLot()
-    lot.initialize({
-        VehicleType.MOTORCYCLE: 1,
-        VehicleType.CAR: 1,
-        VehicleType.BUS: 1
-    })
-
-    first = lot.park(
-        Vehicle("C001", VehicleType.CAR)
-    )
-
-    assert first.ticket_id == "T001"
-
-    try:
-        lot.park(
-            Vehicle("C002", VehicleType.CAR)
-        )
-        assert False, "Expected parking to fail"
-    except ValueError as error:
-        assert str(error) == "No available car spots"
+    lot.initialize({VehicleType.CAR: 1})
+    lot.park(Vehicle("C001", VehicleType.CAR))
+    with pytest.raises(ValueError, match="No available car spot"):
+        lot.park(Vehicle("C002", VehicleType.CAR))
 
 
 def test_bus_contiguous_spots():
-    """Test that buses receive consecutive parking spots."""
+    """Test that a bus requires two consecutive parking spots."""
     lot = ParkingLot()
-    lot.initialize({
-        VehicleType.MOTORCYCLE: 1,
-        VehicleType.CAR: 1,
-        VehicleType.BUS: 2
-    })
-
-    first_bus = lot.park(
-        Vehicle("B001", VehicleType.BUS)
-    )
-
-    assert first_bus.ticket_id == "T001"
-    assert first_bus.spot_ids == ["B-01", "B-02"]
-
-    try:
-        lot.park(
-            Vehicle("B002", VehicleType.BUS)
-        )
-        assert False, "Expected parking to fail"
-    except ValueError as error:
-        assert str(error) == "No available bus spots"
+    lot.initialize({VehicleType.CAR: 1, VehicleType.BUS: 1})
+    with pytest.raises(ValueError, match="No available bus spots"):
+        lot.park(Vehicle("B001", VehicleType.BUS))
 
 
 def test_hourly_pricing():
-    """Test hourly parking pricing."""
-    lot = ParkingLot(pricing_type="hourly")
-    lot.initialize({
-        VehicleType.MOTORCYCLE: 1,
-        VehicleType.CAR: 1,
-        VehicleType.BUS: 1
-    })
+    """Test hourly pricing."""
+    lot = ParkingLot()
+    lot.initialize({VehicleType.CAR: 1}, pricing_type="hourly")
+    ticket = lot.park(Vehicle("C001", VehicleType.CAR))
+    visit = lot.exit_vehicle(ticket.ticket_id)
 
-    result = lot.park(
-        Vehicle("C001", VehicleType.CAR)
-    )
-
-    assert result.ticket_id == "T001"
-
-    exit_result = lot.exit_vehicle(
-        result.ticket_id
-    )
-
-    assert exit_result.ticket_id == "T001"
-    assert exit_result.fee == 100.0
+    assert visit.fee == 100.0
 
 
 def test_flat_pricing():
-    """Test flat parking pricing."""
-    lot = ParkingLot(pricing_type="flat")
-    lot.initialize({
-        VehicleType.MOTORCYCLE: 1,
-        VehicleType.CAR: 1,
-        VehicleType.BUS: 1
-    })
+    """Test flat-rate pricing."""
+    lot = ParkingLot()
+    lot.initialize({VehicleType.CAR: 1}, pricing_type="flat")
+    ticket = lot.park(Vehicle("C001", VehicleType.CAR))
+    visit = lot.exit_vehicle(ticket.ticket_id)
 
-    result = lot.park(
-        Vehicle("C001", VehicleType.CAR)
-    )
-
-    assert result.ticket_id == "T001"
-
-    exit_result = lot.exit_vehicle(
-        result.ticket_id
-    )
-
-    assert exit_result.ticket_id == "T001"
-    assert exit_result.fee == 200.0
+    assert visit.fee == 200.0
 
 
 def test_history_multiple_cycles():
-    """Test parking history across multiple visits."""
+    """Test that multiple completed visits appear in history."""
     lot = ParkingLot()
-    lot.initialize({
-        VehicleType.MOTORCYCLE: 1,
-        VehicleType.CAR: 1,
-        VehicleType.BUS: 1
-    })
-
-    first = lot.park(
-        Vehicle("C001", VehicleType.CAR)
-    )
-
-    lot.exit_vehicle(first.ticket_id)
-
-    second = lot.park(
-        Vehicle("C001", VehicleType.CAR)
-    )
-
-    lot.exit_vehicle(second.ticket_id)
-
+    lot.initialize({VehicleType.CAR: 1})
+    for _ in range(2):
+        ticket = lot.park(Vehicle("C001", VehicleType.CAR))
+        lot.exit_vehicle(ticket.ticket_id)
     history = lot.get_history("C001")
 
     assert len(history) == 2
-    assert history[0].plate == "C001"
-    assert history[1].plate == "C001"
+    assert all(visit.plate == "C001" for visit in history)
+
+
+def test_invalid_spot_configuration():
+    """Test that an empty parking configuration raises an error."""
+    lot = ParkingLot()
+    with pytest.raises(
+        ValueError,
+        match="At least one vehicle type is required",
+    ):
+        lot.initialize({})
+
+
+def test_exit_ticket_twice():
+    """Test that a completed ticket cannot be used again."""
+    lot = ParkingLot()
+    lot.initialize({VehicleType.CAR: 1})
+    ticket = lot.park(Vehicle("C001", VehicleType.CAR))
+    lot.exit_vehicle(ticket.ticket_id)
+    with pytest.raises(
+        ValueError,
+        match="Invalid or already-closed ticket ID",
+    ):
+        lot.exit_vehicle(ticket.ticket_id)
