@@ -1,9 +1,8 @@
-
 """Application startup and command-line interface."""
 
 import shlex
-from parking_system.parking_cli import build_parser, run_command
-from parking_system.parking_lot import ParkingLot
+from parking_system.cli.parking_cli import build_parser, run_command
+from parking_system.core.parking_lot import ParkingLot
 
 
 def run_app():

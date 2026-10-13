@@ -1,7 +1,7 @@
 """Tests for parking lot concurrency."""
 
-from parking_system.models import VehicleType
-from parking_system.parking_lot import ParkingLot
+from parking_system.models.models import VehicleType
+from parking_system.core.parking_lot import ParkingLot
 
 
 def test_concurrency_stress():

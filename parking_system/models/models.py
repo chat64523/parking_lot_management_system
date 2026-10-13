@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from parking_system.utils import (
+from parking_system.utils.validators import (
     validate_exit_time,
     validate_vehicle_type,
 )

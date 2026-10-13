@@ -4,7 +4,7 @@ import argparse
 import json
 from dataclasses import asdict, is_dataclass
 from enum import Enum
-from parking_system.models import Vehicle, VehicleType
+from parking_system.models.models import Vehicle, VehicleType
 
 
 def json_default(value):

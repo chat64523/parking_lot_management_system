@@ -4,17 +4,17 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 from datetime import datetime
-from parking_system.models import (
+from parking_system.models.models import (
     Spot,
     Ticket,
     Vehicle,
     Visit,
     VehicleType,
 )
-from parking_system.pricing import create_pricing
-from parking_system.storage import Storage
-from parking_system.utils import validate_vehicle_type
-from parking_system.vehicles import (
+from parking_system.pricing.pricing_strategies import create_pricing
+from parking_system.storage.storage import Storage
+from parking_system.utils.validators import validate_vehicle_type
+from parking_system.vehicles.config import (
     get_spots_required,
     get_vehicle_prefix,
 )

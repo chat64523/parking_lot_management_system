@@ -2,8 +2,8 @@
 
 from abc import ABC, abstractmethod
 from math import ceil
-from parking_system.models import VehicleType
-from parking_system.utils import validate_vehicle_type
+from parking_system.models.models import VehicleType
+from parking_system.utils.validators import validate_vehicle_type
 
 
 HOURLY_RATES = {

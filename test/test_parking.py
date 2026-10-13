@@ -1,8 +1,8 @@
 """Tests for the parking lot management system."""
 
 import pytest
-from parking_system.parking_lot import ParkingLot
-from parking_system.models import Vehicle, VehicleType
+from parking_system.core.parking_lot import ParkingLot
+from parking_system.models.models import Vehicle, VehicleType
 
 
 def test_empty_entry():
